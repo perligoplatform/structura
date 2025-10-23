@@ -31,10 +31,10 @@ StudentLoan::StudentLoan(const std::string& id, StudentLoanProgram program,
     // Calculate origination fee
     origination_fee_ = calculateOriginationFee(program, principal, 2024); // Current academic year
     
-    // Set grace period (typically 6 months after leaving school)
-    grace_period_end_ = Date(disbursement_date.year(), disbursement_date.month() + 6, disbursement_date.day());
-    
-    // Set initial repayment begin date (after grace period)
+    // Set derived dates
+    grace_period_end_ = Date(disbursement_date.dayOfMonth(), 
+                            static_cast<QuantLib::Month>(disbursement_date.month() + 6), 
+                            disbursement_date.year());    // Set initial repayment begin date (after grace period)
     repayment_begin_date_ = grace_period_end_;
     
     // Calculate initial scheduled payment for standard 10-year term
@@ -43,9 +43,9 @@ StudentLoan::StudentLoan(const std::string& id, StudentLoanProgram program,
     scheduled_monthly_payment_ = calculateMonthlyPayment(RepaymentPlan::STANDARD);
     
     // Calculate scheduled payoff date
-    scheduled_payoff_date_ = Date(repayment_begin_date_.year() + 10, 
+    scheduled_payoff_date_ = Date(repayment_begin_date_.dayOfMonth(), 
                                  repayment_begin_date_.month(), 
-                                 repayment_begin_date_.day());
+                                 repayment_begin_date_.year() + 10);
 }
 
 // Core asset interface implementations
@@ -375,9 +375,9 @@ IDRCalculation StudentLoan::calculateIDRPayment() const {
     calc.annual_payment_cap = discretionary_income * percentage;
     
     // Next recertification is typically annual
-    calc.recertification_due = Date(last_income_certification_.year() + 1,
+        Date recert_due = Date(last_income_certification_.dayOfMonth(),
                                    last_income_certification_.month(),
-                                   last_income_certification_.day());
+                                   last_income_certification_.year() + 1);
     
     return calc;
 }
@@ -418,8 +418,9 @@ Date StudentLoan::calculatePayoffDate() const {
     
     // Simplified calculation
     int months_remaining = static_cast<int>(getCurrentBalance() / scheduled_monthly_payment_);
-    return Date(repayment_begin_date_.year(), repayment_begin_date_.month() + months_remaining, 
-               repayment_begin_date_.day());
+    return Date(repayment_begin_date_.dayOfMonth(), 
+               static_cast<QuantLib::Month>(repayment_begin_date_.month() + months_remaining), 
+               repayment_begin_date_.year());
 }
 
 Amount StudentLoan::calculatePayoffAmount(Date payoff_date) const {

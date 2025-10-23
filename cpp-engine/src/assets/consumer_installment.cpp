@@ -28,9 +28,13 @@ ConsumerInstallment::ConsumerInstallment(const std::string& id, ConsumerInstallm
     scheduled_payment_ = calculateMonthlyPayment();
     
     // Set payment dates
-    first_payment_date_ = Date(origination_date.year(), origination_date.month() + 1, origination_date.day());
+    first_payment_date_ = Date(origination_date.dayOfMonth(), 
+                              static_cast<QuantLib::Month>(origination_date.month() + 1), 
+                              origination_date.year());
     next_payment_date_ = first_payment_date_;
-    maturity_date_ = Date(origination_date.year(), origination_date.month() + term_months, origination_date.day());
+    maturity_date_ = Date(origination_date.dayOfMonth(), 
+                         static_cast<QuantLib::Month>(origination_date.month() + term_months), 
+                         origination_date.year());
     
     // Calculate DTI ratios
     if (borrower_.monthly_income > 0.0) {
@@ -213,8 +217,9 @@ void ConsumerInstallment::processRegularPayment(Amount payment_amount, Date paym
     }
     
     // Update next payment date
-    next_payment_date_ = Date(next_payment_date_.year(), next_payment_date_.month() + 1, 
-                             next_payment_date_.day());
+    next_payment_date_ = Date(next_payment_date_.dayOfMonth(), 
+                             static_cast<QuantLib::Month>(next_payment_date_.month() + 1), 
+                             next_payment_date_.year());
     
     // Check if loan is paid off
     if (current_principal_ <= 0.01) {
@@ -281,8 +286,9 @@ void ConsumerInstallment::enterHardshipProgram(Date start_date, const std::strin
     } else if (program_type == "Payment Deferral") {
         // Extend term by 6 months
         remaining_term_months_ += 6;
-        maturity_date_ = Date(maturity_date_.year(), maturity_date_.month() + 6, 
-                             maturity_date_.day());
+        maturity_date_ = Date(maturity_date_.dayOfMonth(), 
+                             static_cast<QuantLib::Month>(maturity_date_.month() + 6), 
+                             maturity_date_.year());
     }
 }
 
@@ -449,8 +455,9 @@ Date ConsumerInstallment::calculatePayoffDate() const {
     
     // Estimate based on current payment schedule
     int estimated_months = static_cast<int>(getCurrentBalance() / scheduled_payment_);
-    return Date(origination_date_.year(), origination_date_.month() + payments_made_ + estimated_months,
-               origination_date_.day());
+    return Date(origination_date_.dayOfMonth(),
+               static_cast<QuantLib::Month>(origination_date_.month() + payments_made_ + estimated_months),
+               origination_date_.year());
 }
 
 // Utility function implementations

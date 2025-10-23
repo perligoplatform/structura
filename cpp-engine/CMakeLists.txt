@@ -71,6 +71,12 @@ list(APPEND CORE_SOURCES
     "src/assets/auto_loan.cpp"
     "src/assets/credit_card.cpp"
     "src/assets/pool.cpp"
+    "src/assets/student_loan.cpp"
+    "src/assets/corporate_loan.cpp"
+    "src/assets/consumer_installment.cpp"
+    "src/assets/fixed_asset.cpp"
+    "src/assets/receivable.cpp"
+    "src/assets/projected_cash_flow.cpp"
 )
 
 file(GLOB_RECURSE CORE_HEADERS
@@ -140,6 +146,7 @@ if(BUILD_TESTS)
         tests/mortgage_test.cpp
         tests/auto_loan_test.cpp
         tests/pool_test.cpp
+        tests/new_asset_test.cpp
     )
 
     target_link_libraries(structura_tests PRIVATE

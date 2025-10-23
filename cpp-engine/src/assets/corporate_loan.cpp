@@ -27,9 +27,9 @@ CorporateLoan::CorporateLoan(const std::string& id, CorporateLoanType type,
         type == CorporateLoanType::WORKING_CAPITAL ||
         type == CorporateLoanType::SWING_LINE) {
         // Revolving facilities typically have shorter commitment periods
-        commitment_expiry_date_ = Date(agreement_date.year() + 3, 
+        commitment_expiry_date_ = Date(agreement_date.dayOfMonth(), 
                                       agreement_date.month(), 
-                                      agreement_date.day());
+                                      agreement_date.year() + 3);
     }
     
     // Initialize with borrower as sole lender if not syndicated
