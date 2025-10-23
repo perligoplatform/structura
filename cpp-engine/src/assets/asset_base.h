@@ -113,6 +113,9 @@ class Mortgage;
 class Loan;
 class Installment;
 class Lease;
+class StudentLoan;
+class CorporateLoan;
+class ConsumerInstallment;
 class FixedAsset;
 class Receivable;
 class ProjectedCashFlow;
@@ -123,6 +126,9 @@ using AssetUnion = std::variant<
     Loan, 
     Installment, 
     Lease, 
+    StudentLoan,
+    CorporateLoan,
+    ConsumerInstallment,
     FixedAsset, 
     Receivable, 
     ProjectedCashFlow
