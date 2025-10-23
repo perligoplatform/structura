@@ -1,0 +1,155 @@
+cmake_minimum_required(VERSION 3.20)
+project(StructuraCPP VERSION 1.0.0 LANGUAGES CXX)
+
+# C++ Standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Compiler-specific options
+if(MSVC)
+    add_compile_options(/W4 /permissive-)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+else()
+    add_compile_options(-Wall -Wextra -pedantic)
+endif()
+
+# Build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Optimization flags
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+
+# Find packages
+find_package(Threads REQUIRED)
+
+# QuantLib integration - Updated configuration
+set(QuantLib_ROOT /usr)
+find_package(QuantLib QUIET)
+if(NOT QuantLib_FOUND)
+    # Fallback: find library and headers manually
+    find_library(QuantLib_LIBRARY NAMES QuantLib libQuantLib PATHS /usr/lib /usr/local/lib)
+    find_path(QuantLib_INCLUDE_DIR ql/quantlib.hpp PATHS /usr/include /usr/local/include)
+    if(QuantLib_LIBRARY AND QuantLib_INCLUDE_DIR)
+        set(QuantLib_FOUND TRUE)
+        message(STATUS "Found QuantLib: ${QuantLib_LIBRARY}")
+        message(STATUS "QuantLib headers: ${QuantLib_INCLUDE_DIR}")
+    else()
+        message(WARNING "QuantLib not found - some features will be disabled")
+    endif()
+endif()
+
+# Third-party dependencies
+include(FetchContent)
+
+# nlohmann/json for JSON parsing
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.2
+)
+
+FetchContent_MakeAvailable(nlohmann_json)
+
+# Include directories
+include_directories(src)
+
+# Core library sources (clean implementation)
+list(APPEND CORE_SOURCES 
+    "src/core/types.cpp"
+    "src/core/date_utils.cpp"
+    "src/core/deal_base.cpp"
+    # "src/entities/deal.cpp"  # TODO: Temporarily disabled - needs update for new Account system
+    "src/entities/fee.cpp"
+    "src/entities/bond.cpp"
+    "src/assets/asset_base.cpp"
+    "src/assets/mortgage.cpp"
+    "src/assets/auto_loan.cpp"
+    "src/assets/pool.cpp"
+)
+
+file(GLOB_RECURSE CORE_HEADERS
+    "src/core/*.h"
+    "src/entities/*.h"
+    "src/assets/*.h"
+    "src/calculations/*.h" 
+    "src/rules/*.h"
+)
+
+add_library(structura_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
+
+target_link_libraries(structura_core 
+    nlohmann_json::nlohmann_json
+    Threads::Threads
+)
+
+# Add QuantLib if found
+if(QuantLib_FOUND)
+    if(TARGET QuantLib::QuantLib)
+        target_link_libraries(structura_core QuantLib::QuantLib)
+    else()
+        target_link_libraries(structura_core ${QuantLib_LIBRARY})
+        target_include_directories(structura_core PRIVATE ${QuantLib_INCLUDE_DIR})
+    endif()
+    target_compile_definitions(structura_core PRIVATE HAVE_QUANTLIB=1)
+endif()
+
+target_include_directories(structura_core PUBLIC src)
+
+# Demo executable
+add_executable(structura_demo examples/simple_demo.cpp)
+target_link_libraries(structura_demo structura_core)
+
+# QuantLib test executable
+add_executable(quantlib_test examples/quantlib_test.cpp)
+if(QuantLib_FOUND)
+    if(TARGET QuantLib::QuantLib)
+        target_link_libraries(quantlib_test QuantLib::QuantLib)
+    else()
+        target_link_libraries(quantlib_test ${QuantLib_LIBRARY})
+        target_include_directories(quantlib_test PRIVATE ${QuantLib_INCLUDE_DIR})
+    endif()
+    target_compile_definitions(quantlib_test PRIVATE HAVE_QUANTLIB=1)
+endif()
+
+# Tests with Google Test (optional)
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
+    )
+    FetchContent_MakeAvailable(googletest)
+
+    enable_testing()
+
+    add_executable(structura_tests
+        tests/basic_test.cpp
+        tests/bond_test.cpp 
+        tests/date_test.cpp
+        tests/financial_types_test.cpp
+        tests/account_test.cpp
+        tests/asset_base_test.cpp
+        tests/mortgage_test.cpp
+        tests/auto_loan_test.cpp
+        tests/pool_test.cpp
+    )
+
+    target_link_libraries(structura_tests PRIVATE
+        structura_core
+        gtest_main
+    )
+
+    include(GoogleTest)
+    gtest_discover_tests(structura_tests)
+endif()
+
+# Installation
+install(TARGETS structura_demo DESTINATION bin)
+install(TARGETS structura_core DESTINATION lib)
+install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")

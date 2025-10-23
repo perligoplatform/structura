@@ -1,0 +1,76 @@
+#pragma once
+
+#include <string>
+#include <chrono>
+#include <memory>
+#include <vector>
+#include <unordered_map>
+
+namespace structura {
+
+// Simple, clean financial types
+using Balance = long double;  // Start with simple precision
+using Rate = long double;
+using Amount = Balance;
+
+// Simple date class (QuantLib-ready interface)
+class Date {
+private:
+    int year_, month_, day_;
+    
+public:
+    Date() : year_(1970), month_(1), day_(1) {}
+    Date(int year, int month, int day) : year_(year), month_(month), day_(day) {}
+    
+    int year() const { return year_; }
+    int month() const { return month_; }
+    int dayOfMonth() const { return day_; }
+    
+    // Comparison operators
+    bool operator<(const Date& other) const;
+    bool operator<=(const Date& other) const;
+    bool operator>(const Date& other) const;
+    bool operator>=(const Date& other) const;
+    bool operator==(const Date& other) const;
+    bool operator!=(const Date& other) const;
+    
+    // Date arithmetic
+    Date operator+(int days) const;
+    Date operator-(int days) const;
+    int operator-(const Date& other) const;
+    
+    std::string toString() const;
+};
+
+// Forward declarations
+class Deal;
+class Bond;
+class Account;
+class Fee;
+
+// Smart pointer aliases
+template<typename T>
+using Ptr = std::shared_ptr<T>;
+
+template<typename T>
+using EntityMap = std::unordered_map<std::string, Ptr<T>>;
+
+// Entity base class
+class Entity {
+protected:
+    std::string id_;
+    std::string name_;
+    
+public:
+    Entity(std::string id, std::string name)
+        : id_(std::move(id)), name_(std::move(name)) {}
+    
+    virtual ~Entity() = default;
+    
+    const std::string& getId() const { return id_; }
+    const std::string& getName() const { return name_; }
+    
+    virtual Balance getCurrentBalance() const = 0;
+};
+
+} // namespace structura

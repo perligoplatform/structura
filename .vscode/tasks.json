@@ -1,0 +1,99 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-main",
+            "type": "shell",
+            "command": "make",
+            "args": ["structura_engine"],
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/cpp-engine/build"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build-tests",
+            "type": "shell",
+            "command": "make",
+            "args": ["structura_tests"],
+            "group": "build", 
+            "options": {
+                "cwd": "${workspaceFolder}/cpp-engine/build"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "clean-build",
+            "type": "shell",
+            "command": "rm",
+            "args": ["-rf", "build", "&&", "mkdir", "build", "&&", "cd", "build", "&&", "cmake", "..", "&&", "make"],
+            "group": "build",
+            "options": {
+                "cwd": "${workspaceFolder}/cpp-engine"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "run-tests",
+            "type": "shell",
+            "command": "./structura_tests",
+            "args": ["--gtest_color=yes"],
+            "group": "test",
+            "dependsOn": "build-tests",
+            "options": {
+                "cwd": "${workspaceFolder}/cpp-engine/build"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        },
+        {
+            "label": "run-main",
+            "type": "shell",
+            "command": "./structura_engine",
+            "group": "test",
+            "dependsOn": "build-main",
+            "options": {
+                "cwd": "${workspaceFolder}/cpp-engine/build"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        }
+    ]
+}

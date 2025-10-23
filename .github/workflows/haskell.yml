@@ -1,0 +1,47 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: haskell-actions/setup@v2.8.0
+      with:
+        ghc-version: '9.8.4'
+        cabal-version: 'latest'
+
+    - name: Cache
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-cabal
+      with:
+        path: ~/.cabal
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Install depndencies
+      run: |
+        cabal update
+    - name: Build
+      run: cabal build
+    - name: Run tests
+      run: cabal test
+
+    - name: Badge Action
+      uses: emibcn/badge-action@v1.2.4
+
+      

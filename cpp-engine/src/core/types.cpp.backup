@@ -1,0 +1,73 @@
+#include "core/types.h"
+#include <sstream>
+#include <iomanip>
+
+namespace structura {
+
+// Date comparison operators
+bool Date::operator<(const Date& other) const {
+    if (year_ != other.year_) return year_ < other.year_;
+    if (month_ != other.month_) return month_ < other.month_;
+    return day_ < other.day_;
+}
+
+bool Date::operator<=(const Date& other) const {
+    return *this < other || *this == other;
+}
+
+bool Date::operator>(const Date& other) const {
+    return !(*this <= other);
+}
+
+bool Date::operator>=(const Date& other) const {
+    return !(*this < other);
+}
+
+bool Date::operator==(const Date& other) const {
+    return year_ == other.year_ && month_ == other.month_ && day_ == other.day_;
+}
+
+bool Date::operator!=(const Date& other) const {
+    return !(*this == other);
+}
+
+// Simple date arithmetic (placeholder - use QuantLib for production)
+Date Date::operator+(int days) const {
+    // Simplified - add proper date arithmetic later
+    int new_day = day_ + days;
+    int new_month = month_;
+    int new_year = year_;
+    
+    // Handle month overflow (simplified)
+    while (new_day > 30) { // Assume 30 days per month for simplicity
+        new_day -= 30;
+        new_month++;
+        if (new_month > 12) {
+            new_month = 1;
+            new_year++;
+        }
+    }
+    
+    return Date{new_year, new_month, new_day};
+}
+
+Date Date::operator-(int days) const {
+    return *this + (-days);
+}
+
+int Date::operator-(const Date& other) const {
+    // Simple day difference calculation (placeholder)
+    int this_days = year_ * 365 + month_ * 30 + day_;
+    int other_days = other.year_ * 365 + other.month_ * 30 + other.day_;
+    return this_days - other_days;
+}
+
+std::string Date::toString() const {
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(4) << year_ << "-"
+        << std::setw(2) << month_ << "-"
+        << std::setw(2) << day_;
+    return oss.str();
+}
+
+} // namespace structura

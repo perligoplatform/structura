@@ -1,0 +1,173 @@
+#include "core/account.h"
+#include <stdexcept>
+#include <algorithm>
+
+namespace Structura {
+
+// ReserveAmount implementation
+ReserveAmount::ReserveAmount(ReserveType type, Amount value)
+    : type(type), value(value) {}
+
+Amount ReserveAmount::calculateReserve(Amount reference_amount) const {
+    switch (type) {
+        case ReserveType::FIXED:
+            return value;
+        case ReserveType::PERCENTAGE:
+            return reference_amount * value;
+        case ReserveType::MAX:
+            return std::max(value, reference_amount * 0.01); // Default 1% minimum
+        case ReserveType::MIN:
+            return std::min(value, reference_amount * 0.1);  // Default 10% maximum
+        default:
+            throw std::invalid_argument("Unknown reserve type");
+    }
+}
+
+// InterestInfo implementation  
+InterestInfo::InterestInfo(Rate annual_rate, PaymentFrequency compound_freq, Date start_date)
+    : annual_rate(annual_rate), compound_frequency(compound_freq), start_date(start_date) {}
+
+Amount InterestInfo::calculateInterest(Amount principal, int days) const {
+    if (annual_rate <= 0 || principal <= 0 || days <= 0) return 0.0;
+    
+    // Simple daily interest calculation
+    double daily_rate = annual_rate / 365.0;
+    return principal * daily_rate * days;
+}
+
+// Transaction implementation
+Transaction::Transaction(TransactionType type, Amount amount, Date date, std::string description)
+    : type(type), amount(amount), date(date), description(description) {}
+
+// Account implementation
+Account::Account(const std::string& name, AccountType type)
+    : name_(name), type_(type), balance_(0.0) {}
+
+Account::Account(const std::string& name, Balance initialBalance)
+    : name_(name), type_(AccountType::CASH), balance_(initialBalance) {}
+
+Account::Account(const std::string& name, Balance initialBalance,
+                const ReserveAmount& reserve, const InterestInfo& interest)
+    : name_(name), type_(AccountType::CASH), balance_(initialBalance),
+      interestInfo_(interest), reserveAmount_(reserve) {}
+
+void Account::deposit(Amount amount) {
+    if (amount <= 0) {
+        throw std::invalid_argument("Deposit amount must be positive");
+    }
+    
+    balance_ += amount;
+    transactions_.emplace_back(TransactionType::DEPOSIT, amount, Date(), "Deposit");
+}
+
+bool Account::withdraw(Amount amount) {
+    if (amount <= 0) {
+        throw std::invalid_argument("Withdrawal amount must be positive");
+    }
+    
+    if (balance_ >= amount) {
+        balance_ -= amount;
+        transactions_.emplace_back(TransactionType::WITHDRAWAL, amount, Date(), "Withdrawal");
+        return true;
+    }
+    return false;
+}
+
+bool Account::transfer(Amount amount, Account& toAccount) {
+    if (amount <= 0) {
+        throw std::invalid_argument("Transfer amount must be positive");
+    }
+    
+    if (balance_ >= amount) {
+        balance_ -= amount;
+        toAccount.balance_ += amount;
+        
+        transactions_.emplace_back(TransactionType::TRANSFER_OUT, amount, Date(), 
+                                  "Transfer to " + toAccount.name_);
+        toAccount.transactions_.emplace_back(TransactionType::TRANSFER_IN, amount, Date(),
+                                           "Transfer from " + name_);
+        return true;
+    }
+    return false;
+}
+
+void Account::accrueInterest(Date asOfDate) {
+    if (!interestInfo_) return;
+    
+    // Calculate days since last interest accrual
+    Date lastDate = lastInterestDate_.value_or(interestInfo_->start_date);
+    int days = asOfDate - lastDate;
+    
+    if (days > 0) {
+        Amount interest = interestInfo_->calculateInterest(balance_, days);
+        if (interest > 0) {
+            balance_ += interest;
+            transactions_.emplace_back(TransactionType::INTEREST, interest, asOfDate, "Interest accrual");
+        }
+        lastInterestDate_ = asOfDate;
+    }
+}
+
+Amount Account::getRequiredReserve(Amount referenceAmount) const {
+    if (!reserveAmount_) return 0.0;
+    return reserveAmount_->calculateReserve(referenceAmount);
+}
+
+Amount Account::getAvailableBalance(Amount referenceAmount) const {
+    Amount required_reserve = getRequiredReserve(referenceAmount);
+    return std::max(0.0, balance_ - required_reserve);
+}
+
+std::vector<Transaction> Account::getTransactions(Date startDate, Date endDate) const {
+    std::vector<Transaction> filtered;
+    
+    for (const auto& txn : transactions_) {
+        if (txn.date >= startDate && txn.date <= endDate) {
+            filtered.push_back(txn);
+        }
+    }
+    
+    return filtered;
+}
+
+Amount Account::getAverageBalance(Date startDate, Date endDate) const {
+    if (transactions_.empty()) return balance_;
+    
+    Amount sum = 0.0;
+    int days = endDate - startDate + 1;
+    
+    if (days <= 0) return balance_;
+    
+    // Simplified calculation - assumes current balance for the entire period
+    // In practice, would calculate daily balances
+    return balance_;
+}
+
+// Helper functions
+std::string accountTypeToString(AccountType type) {
+    switch (type) {
+        case AccountType::CASH: return "Cash";
+        case AccountType::RESERVE: return "Reserve";
+        case AccountType::ESCROW: return "Escrow";
+        case AccountType::PRINCIPAL_COLLECTION: return "Principal Collection";
+        case AccountType::INTEREST_COLLECTION: return "Interest Collection";
+        case AccountType::FEE: return "Fee";
+        case AccountType::EXPENSE: return "Expense";
+        default: return "Unknown";
+    }
+}
+
+std::string transactionTypeToString(TransactionType type) {
+    switch (type) {
+        case TransactionType::DEPOSIT: return "Deposit";
+        case TransactionType::WITHDRAWAL: return "Withdrawal";
+        case TransactionType::TRANSFER_IN: return "Transfer In";
+        case TransactionType::TRANSFER_OUT: return "Transfer Out";
+        case TransactionType::INTEREST: return "Interest";
+        case TransactionType::FEE: return "Fee";
+        case TransactionType::ADJUSTMENT: return "Adjustment";
+        default: return "Unknown";
+    }
+}
+
+} // namespace Structura

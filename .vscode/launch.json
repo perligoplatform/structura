@@ -1,0 +1,202 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Main Application",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cpp-engine/build/structura_engine",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/cpp-engine/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-main",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "engineLogging": false
+            }
+        },
+        {
+            "name": "Debug Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cpp-engine/build/structura_tests",
+            "args": [
+                "--gtest_break_on_failure",
+                "--gtest_catch_exceptions=0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/cpp-engine/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-tests",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "engineLogging": false
+            }
+        },
+        {
+            "name": "Debug Specific Test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cpp-engine/build/structura_tests",
+            "args": [
+                "--gtest_filter=StructuraTest.BasicTypesTest",
+                "--gtest_break_on_failure",
+                "--gtest_catch_exceptions=0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/cpp-engine/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-tests",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "engineLogging": false
+            }
+        },
+        {
+            "name": "Debug Pool Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cpp-engine/build/structura_tests",
+            "args": [
+                "--gtest_filter=PoolTest.*",
+                "--gtest_break_on_failure",
+                "--gtest_catch_exceptions=0",
+                "--gtest_color=yes"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/cpp-engine/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Break on segfault",
+                    "text": "handle SIGSEGV stop print nopass",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-tests",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "engineLogging": true,
+                "programOutput": true,
+                "trace": false
+            }
+        },
+        {
+            "name": "Debug PresentValuePricing Test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cpp-engine/build/structura_tests",
+            "args": [
+                "--gtest_filter=PoolTest.PresentValuePricing",
+                "--gtest_break_on_failure",
+                "--gtest_catch_exceptions=0",
+                "--gtest_color=yes"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/cpp-engine/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Break on segfault",
+                    "text": "handle SIGSEGV stop print nopass",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Break on floating point exceptions",
+                    "text": "handle SIGFPE stop print nopass",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-tests",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "engineLogging": true,
+                "programOutput": true,
+                "trace": false
+            }
+        },
+        {
+            "name": "Debug Current File",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/debug_current",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-current-file",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "engineLogging": false,
+                "programOutput": true,
+                "trace": false
+            }
+        }
+    ]
+}
