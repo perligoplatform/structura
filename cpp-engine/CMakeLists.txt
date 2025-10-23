@@ -68,6 +68,7 @@ list(APPEND CORE_SOURCES
     "src/assets/asset_base.cpp"
     "src/assets/mortgage.cpp"
     "src/assets/auto_loan.cpp"
+    "src/assets/credit_card.cpp"
     "src/assets/pool.cpp"
 )
 
