@@ -84,6 +84,8 @@ list(APPEND CORE_SOURCES
     "src/deals/clo_deal.cpp"
     "src/deals/consumer_abs_deal.cpp"
     "src/analytics/analytics_engine.cpp"
+    "src/reporting/reporting_engine.cpp"
+    "src/validation/validation_engine.cpp"
 )
 
 file(GLOB_RECURSE CORE_HEADERS
@@ -94,6 +96,8 @@ file(GLOB_RECURSE CORE_HEADERS
     "src/calculations/*.h" 
     "src/rules/*.h"
     "src/analytics/*.h"
+    "src/reporting/*.h"
+    "src/validation/*.h"
 )
 
 add_library(structura_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
@@ -119,6 +123,14 @@ target_include_directories(structura_core PUBLIC src)
 # Demo executable
 add_executable(structura_demo examples/simple_demo.cpp)
 target_link_libraries(structura_demo structura_core)
+
+# Simple workflow demo executable (working version)
+add_executable(simple_workflow_demo examples/simple_workflow_demo.cpp)
+target_link_libraries(simple_workflow_demo structura_core)
+
+# Comprehensive workflow demo executable (advanced version)
+add_executable(comprehensive_workflow_demo examples/comprehensive_workflow_demo.cpp)
+target_link_libraries(comprehensive_workflow_demo structura_core)
 
 # QuantLib test executable
 add_executable(quantlib_test examples/quantlib_test.cpp)
@@ -161,7 +173,9 @@ if(BUILD_TESTS)
         tests/date_utils_enhanced_test.cpp
         tests/enhanced_utils_test.cpp
         tests/deal_structure_test.cpp
-        tests/analytics_engine_test.cpp
+            "tests/analytics_engine_test.cpp"
+    "tests/reporting_engine_test.cpp"
+    "tests/validation_engine_test.cpp"
     )
 
     target_link_libraries(structura_tests PRIVATE

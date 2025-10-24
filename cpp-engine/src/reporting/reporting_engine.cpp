@@ -1,0 +1,715 @@
+#include "reporting_engine.h"
+#include <sstream>
+#include <iomanip>
+#include <fstream>
+#include <algorithm>
+#include <numeric>
+#include <cmath>
+
+namespace Structura {
+
+// Template constants
+const std::string DEFAULT_HTML_TEMPLATE = R"(
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{TITLE}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #ddd; }
+        .metric { display: inline-block; margin: 10px; padding: 10px; background: #f5f5f5; }
+        .chart { width: 100%; height: 400px; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .footer { border-top: 1px solid #ccc; padding-top: 10px; margin-top: 30px; font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{TITLE}}</h1>
+        <h3>{{SUBTITLE}}</h3>
+        <p>Report Date: {{REPORT_DATE}} | Generated: {{GENERATION_DATE}}</p>
+    </div>
+    {{CONTENT}}
+    <div class="footer">{{FOOTER}}</div>
+</body>
+</html>
+)";
+
+const std::string DASHBOARD_HTML_TEMPLATE = R"(
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Deal Performance Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f0f0f0; }
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+        .widget { background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .metric-large { font-size: 2em; font-weight: bold; color: #333; }
+        .metric-label { font-size: 0.9em; color: #666; text-transform: uppercase; }
+        .alert { background: #ffebee; border-left: 4px solid #f44336; padding: 10px; margin: 10px 0; }
+        .success { background: #e8f5e8; border-left: 4px solid #4caf50; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">{{WIDGETS}}</div>
+</body>
+</html>
+)";
+
+// ReportingEngine implementation
+ReportingEngine::ReportingEngine() : analytics_engine_(std::make_unique<AnalyticsEngine>()) {
+    loadDefaultTemplates();
+    
+    // Register default report generators
+    report_generators_[ReportType::DEAL_PERFORMANCE] = [this](const DealBase& deal, const ReportConfig& config, Date date) {
+        return generateDealPerformanceReport(deal, date);
+    };
+    
+    report_generators_[ReportType::RISK_ANALYTICS] = [this](const DealBase& deal, const ReportConfig& config, Date date) {
+        return generateRiskAnalyticsReport(deal, date);
+    };
+    
+    report_generators_[ReportType::CASHFLOW_PROJECTION] = [this](const DealBase& deal, const ReportConfig& config, Date date) {
+        Date end_date = date + 365; // Default 1 year projection
+        if (config.parameters.find("projection_months") != config.parameters.end()) {
+            int months = std::stoi(config.parameters.at("projection_months"));
+            end_date = date + (months * 30); // Approximate months to days
+        }
+        return generateCashflowProjectionReport(deal, date, end_date);
+    };
+}
+
+ReportingEngine::ReportingEngine(std::unique_ptr<AnalyticsEngine> analytics_engine) 
+    : analytics_engine_(std::move(analytics_engine)) {
+    loadDefaultTemplates();
+}
+
+void ReportingEngine::setAnalyticsEngine(std::unique_ptr<AnalyticsEngine> engine) {
+    analytics_engine_ = std::move(engine);
+}
+
+void ReportingEngine::loadDefaultTemplates() {
+    html_templates_["default"] = DEFAULT_HTML_TEMPLATE;
+    html_templates_["dashboard"] = DASHBOARD_HTML_TEMPLATE;
+}
+
+ReportDocument ReportingEngine::generateReport(const DealBase& deal, const ReportConfig& config, Date report_date) const {
+    auto generator_it = report_generators_.find(config.type);
+    if (generator_it != report_generators_.end()) {
+        return generator_it->second(deal, config, report_date);
+    }
+    
+    // Fallback to basic report
+    return generateDealPerformanceReport(deal, report_date);
+}
+
+ReportDocument ReportingEngine::generateDealPerformanceReport(const DealBase& deal, Date report_date) const {
+    ReportDocument report;
+    report.title = "Deal Performance Report";
+    report.subtitle = deal.getDealName();
+    report.report_date = report_date;
+    report.generation_date = Date::todaysDate();
+    report.author = "Structura Analytics Engine";
+    
+    // Add sections
+    report.sections.push_back(generateExecutiveSummary(deal, report_date));
+    report.sections.push_back(generatePerformanceSection(deal, report_date));
+    report.sections.push_back(generateRiskSection(deal, report_date));
+    report.sections.push_back(generateCashflowSection(deal, report_date));
+    
+    report.footer = "Generated by Structura Reporting Engine";
+    
+    return report;
+}
+
+ReportSection ReportingEngine::generateExecutiveSummary(const DealBase& deal, Date report_date) const {
+    ReportSection section;
+    section.title = "Executive Summary";
+    section.description = "Key performance indicators and deal overview";
+    section.order = 1;
+    
+    // Get analytics data
+    auto metrics = analytics_engine_->calculateAllMetrics(deal, report_date);
+    
+    // Key metrics for executive summary
+    if (metrics.find("deal_value") != metrics.end()) {
+        section.data["current_deal_value"] = metrics["deal_value"];
+    }
+    if (metrics.find("deal_factor") != metrics.end()) {
+        section.data["deal_factor"] = metrics["deal_factor"];
+    }
+    if (metrics.find("approximate_irr") != metrics.end()) {
+        section.data["approximate_irr"] = metrics["approximate_irr"];
+    }
+    if (metrics.find("default_probability") != metrics.end()) {
+        section.data["default_probability"] = metrics["default_probability"];
+    }
+    
+    // Deal status
+    switch (deal.getStatus()) {
+        case DealBase::DealStatus::Active:
+            section.data["deal_status"] = std::string("Active");
+            break;
+        case DealBase::DealStatus::Pending:
+            section.data["deal_status"] = std::string("Pending");
+            break;
+        case DealBase::DealStatus::Defaulted:
+            section.data["deal_status"] = std::string("Defaulted");
+            break;
+        default:
+            section.data["deal_status"] = std::string("Unknown");
+            break;
+    }
+    
+    section.data["deal_type"] = deal.getDealInfo().dealType;
+    
+    return section;
+}
+
+ReportSection ReportingEngine::generatePerformanceSection(const DealBase& deal, Date report_date) const {
+    ReportSection section;
+    section.title = "Performance Analysis";
+    section.description = "Detailed performance metrics and trends";
+    section.order = 2;
+    
+    auto metrics = analytics_engine_->calculatePerformanceMetrics(deal, report_date);
+    
+    // Add all performance metrics to the section
+    for (const auto& [key, value] : metrics) {
+        section.data[key] = value;
+    }
+    
+    // Create a performance chart configuration
+    ChartConfig chart;
+    chart.title = "Deal Performance Over Time";
+    chart.chart_type = "line";
+    chart.x_axis_label = "Date";
+    chart.y_axis_label = "Value";
+    chart.data_series = {"deal_value", "deal_factor"};
+    section.charts.push_back(chart);
+    
+    return section;
+}
+
+ReportSection ReportingEngine::generateRiskSection(const DealBase& deal, Date report_date) const {
+    ReportSection section;
+    section.title = "Risk Analysis";
+    section.description = "Risk metrics and exposure analysis";
+    section.order = 3;
+    
+    auto risk_metrics = analytics_engine_->calculateRiskMetrics(deal, report_date);
+    auto credit_metrics = analytics_engine_->calculateCreditMetrics(deal, report_date);
+    
+    // Combine risk and credit metrics
+    for (const auto& [key, value] : risk_metrics) {
+        section.data[key] = value;
+    }
+    for (const auto& [key, value] : credit_metrics) {
+        section.data[key] = value;
+    }
+    
+    // Risk breakdown chart
+    ChartConfig risk_chart;
+    risk_chart.title = "Risk Breakdown";
+    risk_chart.chart_type = "pie";
+    risk_chart.data_series = {"concentration_risk_score", "high_loss_indicator", "default_probability"};
+    section.charts.push_back(risk_chart);
+    
+    return section;
+}
+
+ReportSection ReportingEngine::generateCashflowSection(const DealBase& deal, Date report_date) const {
+    ReportSection section;
+    section.title = "Cashflow Analysis";
+    section.description = "Current cashflow status and projections";
+    section.order = 4;
+    
+    auto operational_metrics = analytics_engine_->calculateOperationalMetrics(deal, report_date);
+    
+    // Add operational metrics
+    for (const auto& [key, value] : operational_metrics) {
+        section.data[key] = value;
+    }
+    
+    // Cashflow projection chart
+    ChartConfig cashflow_chart;
+    cashflow_chart.title = "Projected Cashflows";
+    cashflow_chart.chart_type = "bar";
+    cashflow_chart.x_axis_label = "Time Period";
+    cashflow_chart.y_axis_label = "Amount";
+    cashflow_chart.data_series = {"projected_collections", "projected_losses"};
+    section.charts.push_back(cashflow_chart);
+    
+    return section;
+}
+
+ReportDocument ReportingEngine::generateRiskAnalyticsReport(const DealBase& deal, Date as_of_date) const {
+    ReportDocument report;
+    report.title = "Risk Analytics Report";
+    report.subtitle = deal.getDealName() + " - Risk Assessment";
+    report.report_date = as_of_date;
+    report.generation_date = Date::todaysDate();
+    report.author = "Structura Risk Analytics";
+    
+    // Risk-focused sections
+    report.sections.push_back(generateRiskSection(deal, as_of_date));
+    
+    // Add stress testing section
+    ReportSection stress_section;
+    stress_section.title = "Stress Testing Results";
+    stress_section.description = "Scenario analysis and stress test outcomes";
+    stress_section.order = 2;
+    
+    // Add some stress test scenarios (simplified)
+    stress_section.data["base_case_loss"] = 0.02;
+    stress_section.data["mild_stress_loss"] = 0.05;
+    stress_section.data["severe_stress_loss"] = 0.12;
+    stress_section.data["extreme_stress_loss"] = 0.25;
+    
+    ChartConfig stress_chart;
+    stress_chart.title = "Stress Test Scenarios";
+    stress_chart.chart_type = "bar";
+    stress_chart.x_axis_label = "Scenario";
+    stress_chart.y_axis_label = "Expected Loss Rate";
+    stress_chart.data_series = {"base_case_loss", "mild_stress_loss", "severe_stress_loss", "extreme_stress_loss"};
+    stress_section.charts.push_back(stress_chart);
+    
+    report.sections.push_back(stress_section);
+    report.footer = "Risk analysis generated by Structura Analytics";
+    
+    return report;
+}
+
+ReportDocument ReportingEngine::generateCashflowProjectionReport(const DealBase& deal, Date start_date, Date end_date) const {
+    ReportDocument report;
+    report.title = "Cashflow Projection Report";
+    report.subtitle = deal.getDealName() + " - Forward Looking Analysis";
+    report.report_date = start_date;
+    report.generation_date = Date::todaysDate();
+    report.author = "Structura Cashflow Analytics";
+    
+    // Generate cashflow projection
+    auto projection = generateCashflowProjection(deal, start_date, end_date);
+    
+    ReportSection projection_section;
+    projection_section.title = "Cashflow Projections";
+    projection_section.description = "Forward-looking cashflow analysis based on current performance";
+    projection_section.order = 1;
+    
+    // Add projection summary statistics
+    for (const auto& [key, value] : projection.summary_statistics) {
+        projection_section.data[key] = static_cast<double>(value);
+    }
+    
+    projection_section.data["confidence_level"] = projection.confidence_level;
+    projection_section.data["projection_months"] = static_cast<double>((end_date - start_date) / 30);
+    
+    ChartConfig projection_chart;
+    projection_chart.title = "Projected Monthly Cashflows";
+    projection_chart.chart_type = "line";
+    projection_chart.x_axis_label = "Month";
+    projection_chart.y_axis_label = "Cashflow Amount";
+    projection_chart.data_series = {"principal_collections", "interest_collections", "losses"};
+    projection_section.charts.push_back(projection_chart);
+    
+    report.sections.push_back(projection_section);
+    report.footer = "Cashflow projections are estimates based on historical performance";
+    
+    return report;
+}
+
+CashflowProjectionData ReportingEngine::generateCashflowProjection(const DealBase& deal, Date start_date, Date end_date) const {
+    CashflowProjectionData projection;
+    projection.confidence_level = 0.95;
+    
+    // Generate monthly projection dates
+    Date current_date = start_date;
+    while (current_date < end_date) {
+        projection.projection_dates.push_back(current_date);
+        current_date = current_date + 30; // Approximate month
+    }
+    
+    // Get current deal metrics for projection baseline
+    auto current_metrics = analytics_engine_->calculateAllMetrics(deal, start_date);
+    Balance deal_value = deal.calculateDealValue(start_date);
+    
+    // Simple projection model based on current performance
+    double monthly_collection_rate = 0.02; // 2% of balance per month
+    double monthly_loss_rate = 0.001; // 0.1% loss rate per month
+    
+    if (current_metrics.find("average_payment_rate") != current_metrics.end()) {
+        monthly_collection_rate = current_metrics["average_payment_rate"] * 0.1; // Scale to monthly
+    }
+    
+    // Generate projections
+    std::vector<Amount> principal_collections;
+    std::vector<Amount> interest_collections;
+    std::vector<Amount> losses;
+    
+    Balance remaining_balance = deal_value;
+    for (size_t i = 0; i < projection.projection_dates.size(); ++i) {
+        Amount principal_payment = remaining_balance * monthly_collection_rate * 0.7; // 70% principal
+        Amount interest_payment = remaining_balance * monthly_collection_rate * 0.3; // 30% interest
+        Amount loss_amount = remaining_balance * monthly_loss_rate;
+        
+        principal_collections.push_back(principal_payment);
+        interest_collections.push_back(interest_payment);
+        losses.push_back(loss_amount);
+        
+        remaining_balance -= (principal_payment + loss_amount);
+        remaining_balance = std::max(0.0, remaining_balance); // Don't go negative
+    }
+    
+    projection.cashflow_streams["principal_collections"] = principal_collections;
+    projection.cashflow_streams["interest_collections"] = interest_collections;
+    projection.cashflow_streams["losses"] = losses;
+    
+    // Calculate summary statistics
+    Amount total_principal = std::accumulate(principal_collections.begin(), principal_collections.end(), 0.0);
+    Amount total_interest = std::accumulate(interest_collections.begin(), interest_collections.end(), 0.0);
+    Amount total_losses = std::accumulate(losses.begin(), losses.end(), 0.0);
+    
+    projection.summary_statistics["total_principal_collections"] = total_principal;
+    projection.summary_statistics["total_interest_collections"] = total_interest;
+    projection.summary_statistics["total_projected_losses"] = total_losses;
+    projection.summary_statistics["net_cashflow"] = total_principal + total_interest - total_losses;
+    
+    // Add assumptions
+    projection.assumptions.push_back("Based on current payment performance");
+    projection.assumptions.push_back("Assumes stable economic conditions");
+    projection.assumptions.push_back("No significant portfolio changes");
+    
+    return projection;
+}
+
+std::string ReportingEngine::exportReport(const ReportDocument& report, ReportFormat format) const {
+    switch (format) {
+        case ReportFormat::JSON:
+            return formatAsJSON(report);
+        case ReportFormat::CSV:
+            return formatAsCSV(report);
+        case ReportFormat::HTML:
+            return formatAsHTML(report);
+        case ReportFormat::XML:
+            return formatAsXML(report);
+        case ReportFormat::TEXT:
+            return formatAsText(report);
+        default:
+            return formatAsJSON(report);
+    }
+}
+
+std::string ReportingEngine::formatAsJSON(const ReportDocument& report) const {
+    std::stringstream json;
+    json << "{\n";
+    json << "  \"title\": \"" << report.title << "\",\n";
+    json << "  \"subtitle\": \"" << report.subtitle << "\",\n";
+    json << "  \"report_date\": \"" << report.report_date << "\",\n";
+    json << "  \"generation_date\": \"" << report.generation_date << "\",\n";
+    json << "  \"author\": \"" << report.author << "\",\n";
+    json << "  \"version\": \"" << report.version << "\",\n";
+    json << "  \"sections\": [\n";
+    
+    for (size_t i = 0; i < report.sections.size(); ++i) {
+        const auto& section = report.sections[i];
+        json << "    {\n";
+        json << "      \"title\": \"" << section.title << "\",\n";
+        json << "      \"description\": \"" << section.description << "\",\n";
+        json << "      \"order\": " << section.order << ",\n";
+        json << "      \"data\": {\n";
+        
+        size_t data_count = 0;
+        for (const auto& [key, value] : section.data) {
+            json << "        \"" << key << "\": ";
+            
+            std::visit([&json](const auto& v) {
+                using T = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<T, double>) {
+                    json << std::fixed << std::setprecision(4) << v;
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    json << "\"" << v << "\"";
+                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+                    json << "[";
+                    for (size_t j = 0; j < v.size(); ++j) {
+                        json << std::fixed << std::setprecision(4) << v[j];
+                        if (j < v.size() - 1) json << ", ";
+                    }
+                    json << "]";
+                }
+            }, value);
+            
+            if (++data_count < section.data.size()) json << ",";
+            json << "\n";
+        }
+        
+        json << "      }\n";
+        json << "    }";
+        if (i < report.sections.size() - 1) json << ",";
+        json << "\n";
+    }
+    
+    json << "  ],\n";
+    json << "  \"footer\": \"" << report.footer << "\"\n";
+    json << "}\n";
+    
+    return json.str();
+}
+
+std::string ReportingEngine::formatAsHTML(const ReportDocument& report) const {
+    std::string template_content = html_templates_.at("default");
+    
+    // Replace template variables
+    std::map<std::string, std::string> variables;
+    variables["TITLE"] = report.title;
+    variables["SUBTITLE"] = report.subtitle;
+    variables["REPORT_DATE"] = std::to_string(report.report_date.serialNumber());
+    variables["GENERATION_DATE"] = std::to_string(report.generation_date.serialNumber());
+    variables["FOOTER"] = report.footer;
+    
+    // Generate content
+    std::stringstream content;
+    for (const auto& section : report.sections) {
+        content << "<div class=\"section\">\n";
+        content << "<h2>" << section.title << "</h2>\n";
+        content << "<p>" << section.description << "</p>\n";
+        
+        content << "<div class=\"metrics\">\n";
+        for (const auto& [key, value] : section.data) {
+            content << "<div class=\"metric\">\n";
+            content << "<strong>" << key << ":</strong> ";
+            
+            std::visit([&content](const auto& v) {
+                using T = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<T, double>) {
+                    content << std::fixed << std::setprecision(4) << v;
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    content << v;
+                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+                    content << "[";
+                    for (size_t j = 0; j < v.size(); ++j) {
+                        content << std::fixed << std::setprecision(2) << v[j];
+                        if (j < v.size() - 1) content << ", ";
+                    }
+                    content << "]";
+                }
+            }, value);
+            
+            content << "\n</div>\n";
+        }
+        content << "</div>\n";
+        content << "</div>\n";
+    }
+    
+    variables["CONTENT"] = content.str();
+    
+    return processTemplate(template_content, variables);
+}
+
+std::string ReportingEngine::formatAsText(const ReportDocument& report) const {
+    std::stringstream text;
+    
+    text << "=" << std::string(60, '=') << "\n";
+    text << report.title << "\n";
+    text << report.subtitle << "\n";
+    text << "=" << std::string(60, '=') << "\n\n";
+    
+    text << "Report Date: " << report.report_date << "\n";
+    text << "Generated: " << report.generation_date << "\n";
+    text << "Author: " << report.author << "\n\n";
+    
+    for (const auto& section : report.sections) {
+        text << "-" << std::string(40, '-') << "\n";
+        text << section.title << "\n";
+        text << "-" << std::string(40, '-') << "\n";
+        text << section.description << "\n\n";
+        
+        for (const auto& [key, value] : section.data) {
+            text << std::setw(25) << std::left << key << ": ";
+            
+            std::visit([&text](const auto& v) {
+                using T = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<T, double>) {
+                    text << std::fixed << std::setprecision(4) << v;
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    text << v;
+                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+                    text << "[";
+                    for (size_t j = 0; j < v.size(); ++j) {
+                        text << std::fixed << std::setprecision(2) << v[j];
+                        if (j < v.size() - 1) text << ", ";
+                    }
+                    text << "]";
+                }
+            }, value);
+            
+            text << "\n";
+        }
+        text << "\n";
+    }
+    
+    text << "\n" << report.footer << "\n";
+    return text.str();
+}
+
+std::string ReportingEngine::processTemplate(const std::string& template_content, const std::map<std::string, std::string>& variables) const {
+    std::string result = template_content;
+    
+    for (const auto& [key, value] : variables) {
+        std::string placeholder = "{{" + key + "}}";
+        size_t pos = 0;
+        while ((pos = result.find(placeholder, pos)) != std::string::npos) {
+            result.replace(pos, placeholder.length(), value);
+            pos += value.length();
+        }
+    }
+    
+    return result;
+}
+
+void ReportingEngine::saveReportToFile(const ReportDocument& report, const std::string& filename, ReportFormat format) const {
+    std::string content = exportReport(report, format);
+    std::ofstream file(filename);
+    if (file.is_open()) {
+        file << content;
+        file.close();
+    }
+}
+
+// Utility functions
+std::string reportTypeToString(ReportType type) {
+    switch (type) {
+        case ReportType::DEAL_PERFORMANCE: return "Deal Performance";
+        case ReportType::CASHFLOW_PROJECTION: return "Cashflow Projection";
+        case ReportType::RISK_ANALYTICS: return "Risk Analytics";
+        case ReportType::CREDIT_ANALYSIS: return "Credit Analysis";
+        case ReportType::PORTFOLIO_SUMMARY: return "Portfolio Summary";
+        case ReportType::COMPLIANCE_REPORT: return "Compliance Report";
+        case ReportType::MONTHLY_INVESTOR: return "Monthly Investor";
+        case ReportType::QUARTERLY_TRUSTEE: return "Quarterly Trustee";
+        case ReportType::ANNUAL_COMPLIANCE: return "Annual Compliance";
+        default: return "Unknown";
+    }
+}
+
+std::string reportFormatToString(ReportFormat format) {
+    switch (format) {
+        case ReportFormat::JSON: return "JSON";
+        case ReportFormat::CSV: return "CSV";
+        case ReportFormat::HTML: return "HTML";
+        case ReportFormat::PDF: return "PDF";
+        case ReportFormat::EXCEL: return "Excel";
+        case ReportFormat::XML: return "XML";
+        case ReportFormat::TEXT: return "Text";
+        default: return "Unknown";
+    }
+}
+
+// Placeholder implementations for other formatters
+std::string ReportingEngine::formatAsCSV(const ReportDocument& report) const {
+    std::stringstream csv;
+    csv << "Section,Metric,Value\n";
+    
+    for (const auto& section : report.sections) {
+        for (const auto& [key, value] : section.data) {
+            csv << "\"" << section.title << "\",\"" << key << "\",";
+            
+            std::visit([&csv](const auto& v) {
+                using T = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<T, double>) {
+                    csv << std::fixed << std::setprecision(4) << v;
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    csv << "\"" << v << "\"";
+                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+                    csv << "\"[";
+                    for (size_t j = 0; j < v.size(); ++j) {
+                        csv << std::fixed << std::setprecision(2) << v[j];
+                        if (j < v.size() - 1) csv << ",";
+                    }
+                    csv << "]\"";
+                }
+            }, value);
+            
+            csv << "\n";
+        }
+    }
+    
+    return csv.str();
+}
+
+std::string ReportingEngine::formatAsXML(const ReportDocument& report) const {
+    std::stringstream xml;
+    xml << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    xml << "<report>\n";
+    xml << "  <title>" << report.title << "</title>\n";
+    xml << "  <subtitle>" << report.subtitle << "</subtitle>\n";
+    xml << "  <reportDate>" << report.report_date << "</reportDate>\n";
+    xml << "  <generationDate>" << report.generation_date << "</generationDate>\n";
+    xml << "  <sections>\n";
+    
+    for (const auto& section : report.sections) {
+        xml << "    <section>\n";
+        xml << "      <title>" << section.title << "</title>\n";
+        xml << "      <description>" << section.description << "</description>\n";
+        xml << "      <data>\n";
+        
+        for (const auto& [key, value] : section.data) {
+            xml << "        <metric name=\"" << key << "\">";
+            
+            std::visit([&xml](const auto& v) {
+                using T = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<T, double>) {
+                    xml << std::fixed << std::setprecision(4) << v;
+                } else if constexpr (std::is_same_v<T, std::string>) {
+                    xml << v;
+                } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+                    for (size_t j = 0; j < v.size(); ++j) {
+                        xml << std::fixed << std::setprecision(2) << v[j];
+                        if (j < v.size() - 1) xml << ",";
+                    }
+                }
+            }, value);
+            
+            xml << "</metric>\n";
+        }
+        
+        xml << "      </data>\n";
+        xml << "    </section>\n";
+    }
+    
+    xml << "  </sections>\n";
+    xml << "  <footer>" << report.footer << "</footer>\n";
+    xml << "</report>\n";
+    
+    return xml.str();
+}
+
+std::vector<std::string> ReportingEngine::getAvailableReportTypes() const {
+    return {
+        "DealPerformance",
+        "RiskAnalytics", 
+        "CashflowProjection",
+        "ComplianceReport",
+        "MonthlyInvestor",
+        "QuarterlyTrustee",
+        "AnnualReport",
+        "LoanTape",
+        "WaterfallReport",
+        "StressTest",
+        "Sensitivity",
+        "Portfolio",
+        "Benchmark",
+        "Default",
+        "Custom"
+    };
+}
+
+std::vector<std::string> ReportingEngine::getAvailableFormats() const {
+    return {"JSON", "HTML", "CSV", "XML", "PDF", "EXCEL", "TEXT"};
+}
+
+} // namespace Structura
