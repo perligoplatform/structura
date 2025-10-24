@@ -83,6 +83,7 @@ list(APPEND CORE_SOURCES
     "src/assets/projected_cash_flow.cpp"
     "src/deals/clo_deal.cpp"
     "src/deals/consumer_abs_deal.cpp"
+    "src/analytics/analytics_engine.cpp"
 )
 
 file(GLOB_RECURSE CORE_HEADERS
@@ -92,6 +93,7 @@ file(GLOB_RECURSE CORE_HEADERS
     "src/deals/*.h"
     "src/calculations/*.h" 
     "src/rules/*.h"
+    "src/analytics/*.h"
 )
 
 add_library(structura_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
@@ -159,6 +161,7 @@ if(BUILD_TESTS)
         tests/date_utils_enhanced_test.cpp
         tests/enhanced_utils_test.cpp
         tests/deal_structure_test.cpp
+        tests/analytics_engine_test.cpp
     )
 
     target_link_libraries(structura_tests PRIVATE
