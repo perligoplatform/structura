@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../core/types.h"
-#include "../core/interest_rate.h"  // For DayCount enum
+#include "../core/financial_types.h"  // For DayCount enum
 #include <ql/time/date.hpp>
 #include <ql/time/schedule.hpp>
 #include <ql/time/daycounters/all.hpp>
