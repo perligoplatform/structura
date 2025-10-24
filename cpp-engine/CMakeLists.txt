@@ -63,6 +63,7 @@ list(APPEND CORE_SOURCES
     "src/core/types.cpp"
     "src/core/date_utils.cpp"
     "src/core/deal_base.cpp"
+    "src/core/cashflow.cpp"
     # "src/entities/deal.cpp"  # TODO: Temporarily disabled - needs update for new Account system
     "src/entities/fee.cpp"
     "src/entities/bond.cpp"
@@ -150,6 +151,7 @@ if(BUILD_TESTS)
         tests/auto_loan_test.cpp
         tests/pool_test.cpp
         tests/new_asset_test.cpp
+        tests/cashflow_test.cpp
         # tests/deal_structure_test.cpp  # TODO: Enable when deal compilation is fixed
     )
 

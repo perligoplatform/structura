@@ -12,6 +12,7 @@ namespace Structura {
 // Import QuantLib types
 #include <ql/types.hpp>
 using Balance = QuantLib::Real;  // Consistent with financial_types.h
+using Rate = QuantLib::Rate;     // Interest rate type
 
 // Use QuantLib Date directly - clean, no conditionals  
 using Date = QuantLib::Date;
