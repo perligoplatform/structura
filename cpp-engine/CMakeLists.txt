@@ -77,12 +77,15 @@ list(APPEND CORE_SOURCES
     "src/assets/fixed_asset.cpp"
     "src/assets/receivable.cpp"
     "src/assets/projected_cash_flow.cpp"
+    # "src/deals/clo_deal.cpp"          # TODO: Fix Pool<CorporateLoan> compatibility 
+    # "src/deals/consumer_abs_deal.cpp"  # TODO: Fix Pool<ConsumerInstallment> compatibility
 )
 
 file(GLOB_RECURSE CORE_HEADERS
     "src/core/*.h"
     "src/entities/*.h"
     "src/assets/*.h"
+    "src/deals/*.h"
     "src/calculations/*.h" 
     "src/rules/*.h"
 )
@@ -147,6 +150,7 @@ if(BUILD_TESTS)
         tests/auto_loan_test.cpp
         tests/pool_test.cpp
         tests/new_asset_test.cpp
+        # tests/deal_structure_test.cpp  # TODO: Enable when deal compilation is fixed
     )
 
     target_link_libraries(structura_tests PRIVATE
