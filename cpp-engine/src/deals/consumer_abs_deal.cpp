@@ -374,7 +374,7 @@ void ConsumerABSDeal::generateServicingReport(Date) const {}
 void ConsumerABSDeal::generateTriggerStatusReport(Date) const {}
 
 // Additional stub implementations for supporting classes
-ConsumerABSServicer::ConsumerABSServicer() : servicing_fee_rate_(0.0075) {}
+ConsumerABSServicer::ConsumerABSServicer() : servicing_fee_rate(0.0075) {}
 Amount ConsumerABSServicer::calculateServicingFees(const Pool<ConsumerInstallment>&, Date) const { return 0.0; }
 Amount ConsumerABSServicer::processCollections(Pool<ConsumerInstallment>&, Date) { return 0.0; }
 void ConsumerABSServicer::processDelinquencies(Pool<ConsumerInstallment>&, Date) {}

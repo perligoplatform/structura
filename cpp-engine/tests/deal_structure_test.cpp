@@ -7,10 +7,12 @@ using namespace Structura;
 class DealStructureTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        deal_info_ = DealInfo("Test Deal", "TEST", Date(2024, 1, 1), Date(2029, 1, 1));
+        deal_info_ = DealInfo("Test Deal", "TEST", 
+                              DateUtils::makeDate(2024, 1, 1), 
+                              DateUtils::makeDate(2029, 1, 1));
     }
     
-    DealInfo deal_info_;
+    DealInfo deal_info_{"Default", "DEFAULT", DateUtils::makeDate(2020, 1, 1), DateUtils::makeDate(2025, 1, 1)};
 };
 
 TEST_F(DealStructureTest, CLODealBasicConstruction) {

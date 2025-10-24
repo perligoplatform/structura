@@ -352,6 +352,7 @@ public:
     Status getStatus() const { return status_; }
     
     Amount getFacilitySize() const { return facility_size_; }
+    Amount getOriginBalance() const { return facility_size_; }  // For Pool template compatibility
     Amount getOutstandingBalance() const { return outstanding_balance_; }
     Amount getAvailableAmount() const { return available_amount_; }
     const BenchmarkRate& getBenchmark() const { return benchmark_; }

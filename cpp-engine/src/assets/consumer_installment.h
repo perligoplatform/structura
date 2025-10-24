@@ -326,6 +326,7 @@ public:
     Status getStatus() const { return status_; }
     
     Amount getOriginalPrincipal() const { return original_principal_; }
+    Amount getOriginBalance() const { return original_principal_; }  // For Pool template compatibility
     Balance getCurrentPrincipal() const { return current_principal_; }
     Balance getAccruedInterest() const { return accrued_interest_; }
     Rate getOriginalInterestRate() const { return original_interest_rate_; }

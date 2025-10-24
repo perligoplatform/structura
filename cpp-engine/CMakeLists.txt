@@ -67,7 +67,7 @@ list(APPEND CORE_SOURCES
     "src/core/deal_base.cpp"
     "src/core/cashflow.cpp"
     "src/core/interest_rate.cpp"
-    # "src/entities/deal.cpp"  # TODO: Temporarily disabled - needs update for new Account system
+    "src/entities/deal.cpp"
     "src/entities/fee.cpp"
     "src/entities/bond.cpp"
     "src/assets/asset_base.cpp"
@@ -81,8 +81,8 @@ list(APPEND CORE_SOURCES
     "src/assets/fixed_asset.cpp"
     "src/assets/receivable.cpp"
     "src/assets/projected_cash_flow.cpp"
-    # "src/deals/clo_deal.cpp"          # TODO: Fix Pool<CorporateLoan> compatibility 
-    # "src/deals/consumer_abs_deal.cpp"  # TODO: Fix Pool<ConsumerInstallment> compatibility
+    "src/deals/clo_deal.cpp"
+    "src/deals/consumer_abs_deal.cpp"
 )
 
 file(GLOB_RECURSE CORE_HEADERS
@@ -158,7 +158,7 @@ if(BUILD_TESTS)
         tests/interest_rate_test.cpp
         tests/date_utils_enhanced_test.cpp
         tests/enhanced_utils_test.cpp
-        # tests/deal_structure_test.cpp  # TODO: Enable when deal compilation is fixed
+        tests/deal_structure_test.cpp
     )
 
     target_link_libraries(structura_tests PRIVATE

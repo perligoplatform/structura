@@ -1,8 +1,9 @@
 #include "entities/deal.h"
+#include "core/types.h"
 #include <fstream>
 #include <sstream>
 
-namespace structura {
+namespace Structura {
 
 std::unique_ptr<Deal> Deal::fromJsonFile(const std::string& filename) {
     std::ifstream file(filename);
@@ -43,7 +44,7 @@ std::unique_ptr<Deal> Deal::fromJsonString(const std::string& json_str) {
             std::string name = acc_json.value("name", id);
             Balance balance = acc_json.value("balance", 0.0);
             
-            auto account = std::make_shared<Account>(id, name, balance);
+            auto account = std::make_shared<Account>(name, balance);
             deal->addAccount(account);
         }
     }
@@ -83,7 +84,7 @@ std::unique_ptr<Deal> Deal::fromJsonString(const std::string& json_str) {
             // Set due amount if specified
             if (fee_json.contains("due_amount")) {
                 Balance due = fee_json["due_amount"];
-                fee->calculateFee(due / std::max(rate, 1.0L)); // Rough calculation
+                fee->calculateFee(due / std::max(rate, static_cast<Rate>(1.0))); // Rough calculation
             }
             
             deal->addFee(fee);
@@ -105,4 +106,4 @@ nlohmann::json Deal::toJson() const {
     return j;
 }
 
-} // namespace structura
+} // namespace Structura
