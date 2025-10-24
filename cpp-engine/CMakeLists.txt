@@ -86,6 +86,7 @@ list(APPEND CORE_SOURCES
     "src/analytics/analytics_engine.cpp"
     "src/reporting/reporting_engine.cpp"
     "src/validation/validation_engine.cpp"
+    "src/monitoring/monitoring_engine.cpp"
 )
 
 file(GLOB_RECURSE CORE_HEADERS
@@ -98,6 +99,7 @@ file(GLOB_RECURSE CORE_HEADERS
     "src/analytics/*.h"
     "src/reporting/*.h"
     "src/validation/*.h"
+    "src/monitoring/*.h"
 )
 
 add_library(structura_core STATIC ${CORE_SOURCES} ${CORE_HEADERS})
@@ -173,9 +175,10 @@ if(BUILD_TESTS)
         tests/date_utils_enhanced_test.cpp
         tests/enhanced_utils_test.cpp
         tests/deal_structure_test.cpp
-            "tests/analytics_engine_test.cpp"
-    "tests/reporting_engine_test.cpp"
-    "tests/validation_engine_test.cpp"
+        tests/analytics_engine_test.cpp
+        tests/reporting_engine_test.cpp
+        tests/validation_engine_test.cpp
+        tests/monitoring_engine_test.cpp
     )
 
     target_link_libraries(structura_tests PRIVATE
