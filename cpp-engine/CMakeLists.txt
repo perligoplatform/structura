@@ -55,6 +55,9 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(nlohmann_json)
 
+# Add vcpkg include directories for Crow (header-only)
+include_directories(/usr/local/vcpkg/installed/x64-linux/include)
+
 # Include directories
 include_directories(src)
 
@@ -87,6 +90,8 @@ list(APPEND CORE_SOURCES
     "src/reporting/reporting_engine.cpp"
     "src/validation/validation_engine.cpp"
     "src/monitoring/monitoring_engine.cpp"
+    "src/api/api_server.cpp"
+    ""
 )
 
 file(GLOB_RECURSE CORE_HEADERS
@@ -133,6 +138,16 @@ target_link_libraries(simple_workflow_demo structura_core)
 # Comprehensive workflow demo executable (advanced version)
 add_executable(comprehensive_workflow_demo examples/comprehensive_workflow_demo.cpp)
 target_link_libraries(comprehensive_workflow_demo structura_core)
+
+# HTTP API Server executable
+add_executable(structura_api_server 
+    src/api/api_server_main.cpp
+    src/api/api_server.cpp
+)
+target_link_libraries(structura_api_server 
+    structura_core 
+    pthread
+)
 
 # QuantLib test executable
 add_executable(quantlib_test examples/quantlib_test.cpp)
