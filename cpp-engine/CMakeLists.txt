@@ -62,6 +62,7 @@ include_directories(src)
 list(APPEND CORE_SOURCES 
     "src/core/types.cpp"
     "src/core/date_utils.cpp"
+    "src/core/date_utils_enhanced.cpp"
     "src/core/deal_base.cpp"
     "src/core/cashflow.cpp"
     "src/core/interest_rate.cpp"
@@ -154,6 +155,7 @@ if(BUILD_TESTS)
         tests/new_asset_test.cpp
         tests/cashflow_test.cpp
         tests/interest_rate_test.cpp
+        tests/date_utils_enhanced_test.cpp
         # tests/deal_structure_test.cpp  # TODO: Enable when deal compilation is fixed
     )
 
